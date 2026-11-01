@@ -94,6 +94,18 @@
       <p class="muted">Песни, которые напоминают мне о тебе</p>
       <ul class="playlist" id="playlist"></ul>
       <audio id="player" preload="none"></audio>
+      <a class="btn btn-yandex" id="yandex-link" target="_blank" rel="noopener">Слушать на Яндекс Музыке</a>
+      <br>
+      <button class="btn btn-ghost next" data-next="s-reels">Дальше →</button>
+    </div>
+  </section>
+
+  <!-- 6½. ЛЕНТА РИЛСОВ -->
+  <section class="screen" id="s-reels">
+    <div class="card frame">
+      <h2 id="reels-title"></h2>
+      <p class="muted small">Листай вверх ↑ · нажми для звука · двойной тап — лайк</p>
+      <div class="reels" id="reels"></div>
       <button class="btn btn-ghost next" data-next="s-dance">Дальше →</button>
     </div>
   </section>
@@ -103,11 +115,13 @@
     <div class="card frame wide">
       <div id="drink-step">
         <h2 id="drink-q"></h2>
-        <div class="row wrap" id="drink-options"></div>
-      </div>
-      <div id="dance-step" class="hidden">
-        <h2 id="dance-q"></h2>
-        <div class="row"><button class="btn" id="dance-yes">Да!</button><button class="btn btn-ghost" id="dance-yes2">Конечно да!</button></div>
+        <p class="muted" id="drink-prompt"></p>
+        <form id="drink-form" class="answer-form" autocomplete="off">
+          <input id="drink-input" type="text" aria-label="Ответ">
+          <button class="btn" type="submit">Ответить</button>
+        </form>
+        <p id="drink-msg" class="msg" aria-live="polite"></p>
+        <p id="drink-hint" class="hint hidden"></p>
       </div>
       <div id="waltz-step" class="hidden">
         <div class="ballroom" id="ballroom">
@@ -127,7 +141,8 @@
           </div>
           <div class="sparkles" id="sparkles"></div>
         </div>
-        <p class="muted script" id="waltz-caption"></p>
+        <p class="waltz-caption" id="waltz-caption"></p>
+        <p class="muted small hidden" id="waltz-note"></p>
         <div class="row">
           <button class="btn btn-ghost" id="waltz-toggle">⏸ Пауза</button>
           <button class="btn next" data-next="s-letter">К письму →</button>

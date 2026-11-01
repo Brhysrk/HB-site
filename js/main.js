@@ -4,7 +4,7 @@
   const rand = (a) => a[Math.floor(Math.random() * a.length)];
 
   // ---------- Навигация между экранами ----------
-  const NAV = ["s-birthday", "s-compliments", "s-map", "s-playlist", "s-dance", "s-letter"];
+  const NAV = ["s-birthday", "s-compliments", "s-map", "s-playlist", "s-reels", "s-dance", "s-letter"];
   const onEnter = {};
   let current = "s-password";
 
@@ -17,6 +17,7 @@
     dots.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.id === id));
     if (id !== "s-playlist") stopTrack();
     if (id !== "s-dance") stopWaltz();
+    if (id !== "s-reels") pauseReels();
     onEnter[id] && onEnter[id]();
   }
   NAV.forEach((id, i) => {
@@ -228,39 +229,168 @@
     [...$("#playlist").children].forEach((li) => { li.classList.remove("playing"); li.querySelector(".play").textContent = "▶"; });
     playing = -1;
   }
+  const ya = $("#yandex-link");
+  if (C.yandexPlaylist) { ya.href = C.yandexPlaylist; ya.onclick = () => stopTrack(); } else ya.remove();
   player.onended = () => { const n = playing + 1; n < C.playlist.length ? playTrack(n) : stopTrack(); };
 
-  // ---------- 7. Чай? Кофе? Потанцуем? ----------
-  $("#drink-q").textContent = C.drinkQuestion;
-  $("#dance-q").textContent = C.danceQuestion;
-  $("#waltz-caption").textContent = C.waltzCaption;
-  C.drinkOptions.forEach((o) => {
-    const b = document.createElement("button");
-    b.className = "btn btn-ghost"; b.textContent = o;
-    b.onclick = () => { $("#drink-step").classList.add("hidden"); $("#dance-step").classList.remove("hidden"); };
-    $("#drink-options").appendChild(b);
+  // ---------- 6½. Лента рилсов ----------
+  $("#reels-title").textContent = C.reelsTitle;
+  const reelsBox = $("#reels");
+  let reelsMuted = true;
+  const reelEls = C.reels.map((r, i) => {
+    const el = document.createElement("div");
+    el.className = "reel";
+    el.innerHTML = `
+      <video src="${r.src}" muted loop playsinline preload="metadata"></video>
+      <div class="counter">${i + 1} / ${C.reels.length}</div>
+      ${r.caption ? `<div class="cap">${r.caption}</div>` : ""}
+      <div class="side">
+        <button class="like" aria-label="Лайк">🤍</button>
+        <button class="mute" aria-label="Звук">🔇</button>
+      </div>`;
+    const v = el.querySelector("video");
+    v.addEventListener("error", () => {
+      v.insertAdjacentHTML("afterend", `<div class="ph"><b>🎬</b>Видео ${i + 1}<br>положи файл:<br>${r.src}</div>`);
+    });
+    const like = el.querySelector(".like");
+    const setLike = (on) => { like.classList.toggle("on", on); like.textContent = on ? "❤️" : "🤍"; };
+    like.onclick = (e) => { e.stopPropagation(); setLike(!like.classList.contains("on")); };
+    el.querySelector(".mute").onclick = (e) => { e.stopPropagation(); toggleSound(); };
+    // одиночный тап — звук, двойной — лайк с сердечком
+    let lastTap = 0, tapTimer = null;
+    el.addEventListener("click", () => {
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        clearTimeout(tapTimer);
+        setLike(true);
+        const h = document.createElement("div");
+        h.className = "burst"; h.textContent = "❤️";
+        el.appendChild(h); setTimeout(() => h.remove(), 900);
+      } else {
+        tapTimer = setTimeout(toggleSound, 300);
+      }
+      lastTap = now;
+    });
+    reelsBox.appendChild(el);
+    return el;
   });
+  function toggleSound() {
+    reelsMuted = !reelsMuted;
+    reelEls.forEach((el) => {
+      el.querySelector("video").muted = reelsMuted;
+      el.querySelector(".mute").textContent = reelsMuted ? "🔇" : "🔊";
+    });
+  }
+  function playVisibleReel() {
+    if (current !== "s-reels") return;
+    const top = reelsBox.scrollTop, h = reelsBox.clientHeight || 1;
+    const idx = Math.round(top / h);
+    reelEls.forEach((el, i) => {
+      const v = el.querySelector("video");
+      if (i === idx) v.play().catch(() => {});
+      else { v.pause(); }
+    });
+  }
+  function pauseReels() { reelEls.forEach((el) => el.querySelector("video").pause()); }
+  let reelScrollT = null;
+  reelsBox.addEventListener("scroll", () => { clearTimeout(reelScrollT); reelScrollT = setTimeout(playVisibleReel, 120); });
+  onEnter["s-reels"] = () => setTimeout(playVisibleReel, 50);
+
+  // ---------- 7. Чай? Кофе? … Потанцуем? ----------
+  $("#drink-q").textContent = C.drinkQuestion;
+  $("#drink-prompt").textContent = C.drinkPrompt;
+  $("#drink-input").placeholder = C.drinkPlaceholder;
+  $("#drink-hint").textContent = C.drinkHint;
+  $("#waltz-caption").textContent = C.waltzCaption;
+  const norm = (t) => t.toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я]/g, "");
+  let drinkTries = 0;
+  $("#drink-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const val = norm($("#drink-input").value);
+    if (!val) return;
+    if (C.drinkAnswers.map(norm).includes(val)) {
+      $("#drink-step").classList.add("hidden");
+      startWaltz(); // запускаем прямо в обработчике нажатия, иначе браузер не даст включить звук
+      confetti(80);
+      return;
+    }
+    drinkTries++;
+    $("#drink-msg").textContent = C.drinkWrong[(drinkTries - 1) % C.drinkWrong.length];
+    const card = $("#s-dance .card");
+    card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
+    if (drinkTries >= 2) $("#drink-hint").classList.remove("hidden");
+    $("#drink-input").select();
+  });
+
+  // Музыка: файл Never Enough, а если его ещё нет — запасной вальс, сыгранный самим браузером
   const waltz = new Audio(C.waltzSong);
   waltz.loop = true;
+  let songMissing = false, dancing = false;
+  waltz.addEventListener("error", () => { songMissing = true; });
+
   function startWaltz() {
-    $("#dance-step").classList.add("hidden");
     $("#waltz-step").classList.remove("hidden");
     $("#ballroom").classList.remove("paused");
     $("#waltz-toggle").textContent = "⏸ Пауза";
-    waltz.play().catch(() => {});
+    dancing = true;
+    if (songMissing) synthWaltz.start();
+    else waltz.play().catch(() => { songMissing = true; if (dancing) synthWaltz.start(); });
     const sp = $("#sparkles");
     if (!sp.children.length) for (let i = 0; i < 18; i++) {
       const s = document.createElement("span");
-      s.className = "sparkle"; s.textContent = rand(["✨", "⭐", "🤍"]);
+      s.className = "sparkle"; s.textContent = rand(["✨", "⭐", "🤍", "🖤"]);
       s.style.left = Math.random() * 100 + "%"; s.style.top = Math.random() * 60 + "%";
       s.style.animationDelay = Math.random() * 2 + "s";
       sp.appendChild(s);
     }
   }
-  function stopWaltz() { waltz.pause(); $("#ballroom").classList.add("paused"); $("#waltz-toggle").textContent = "▶ Продолжить"; }
-  $("#dance-yes").onclick = startWaltz;
-  $("#dance-yes2").onclick = startWaltz;
-  $("#waltz-toggle").onclick = () => (waltz.paused ? startWaltz() : stopWaltz());
+  function stopWaltz() {
+    dancing = false;
+    waltz.pause(); synthWaltz.stop();
+    $("#ballroom").classList.add("paused");
+    $("#waltz-toggle").textContent = "▶ Продолжить";
+  }
+  $("#waltz-toggle").onclick = () => (dancing ? stopWaltz() : startWaltz());
+
+  // Простенький вальс на Web Audio (раз-два-три), играет, только пока нет mp3
+  const synthWaltz = (() => {
+    let ctx = null, timer = null, next = 0, step = 0;
+    const f = (m) => 440 * Math.pow(2, (m - 69) / 12);
+    const C_ = [64, 67, 72], G7 = [62, 65, 71], F_ = [65, 69, 72];
+    const bars = [[48, C_], [43, G7], [43, G7], [48, C_], [41, F_], [48, C_], [43, G7], [48, C_]];
+    const melody = [79, 76, 72, 71, 74, 77, 79, 77, 74, 76, 72, 67, 69, 72, 77, 79, 76, 72, 74, 77, 71, 72, 0, 0];
+    const BEAT = 0.42;
+    function note(freq, t, dur, vol, type) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(ctx.destination);
+      o.start(t); o.stop(t + dur + 0.05);
+    }
+    function schedule() {
+      while (next < ctx.currentTime + 0.25) {
+        const bar = bars[Math.floor(step / 3) % bars.length], beat = step % 3;
+        if (beat === 0) note(f(bar[0]), next, BEAT * 1.2, 0.22, "triangle");
+        else bar[1].forEach((m) => note(f(m), next, BEAT * 0.6, 0.05, "sine"));
+        const m = melody[step % melody.length];
+        if (m) note(f(m), next, BEAT * 0.95, 0.08, "triangle");
+        next += BEAT; step++;
+      }
+    }
+    return {
+      start() {
+        if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+        ctx.resume();
+        next = ctx.currentTime + 0.05;
+        clearInterval(timer); timer = setInterval(schedule, 60);
+        $("#waltz-note").textContent = "Never Enough пока не добавлена (" + C.waltzSong + "), играет запасной вальс";
+        $("#waltz-note").classList.remove("hidden");
+      },
+      stop() { clearInterval(timer); timer = null; ctx && ctx.suspend(); },
+    };
+  })();
 
   // ---------- 9. Письмо ----------
   $("#letter-title").textContent = C.letterTitle;

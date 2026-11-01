@@ -65,12 +65,34 @@ window.CONFIG = {
     { title: "Песня 3", artist: "Исполнитель", src: "assets/music/track3.mp3", note: "" },
   ],
 
+  // Кнопка под плейлистом
+  yandexPlaylist: "https://music.yandex.ru/playlists/50de6fd2-e10b-48de-8a14-7e0b35667c1f?utm_source=web&utm_medium=copy_link",
+
+  // ---------- 6½. Лента рилсов ----------
+  // Скачай видео в mp4 и положи в assets/reels. Вертикальные 9:16 смотрятся лучше всего.
+  // caption — подпись под видео (можно оставить пустой).
+  reelsTitle: "Рилсы, которые я собрал для тебя",
+  reels: [
+    { src: "assets/reels/reel1.mp4", caption: "Это мы, только котики 🐱" },
+    { src: "assets/reels/reel2.mp4", caption: "Когда ты видишь сырок 🧀" },
+    { src: "assets/reels/reel3.mp4", caption: "" },
+    { src: "assets/reels/reel4.mp4", caption: "" },
+  ],
+
   // ---------- 7. Чай? Кофе? ... Потанцуем? ----------
-  drinkQuestion: "Чай? Кофе?",
-  drinkOptions: ["Чай ☕", "Кофе ☕", "Какао 🍫", "Лимонад 🍋"],
-  danceQuestion: "Потанцуем? 💃🕺",
+  drinkQuestion: "Чай? Кофе? …",
+  drinkPrompt: "Продолжи фразу одним словом 😉",
+  drinkPlaceholder: "Твой ответ…",
+  drinkAnswers: ["потанцуем"],        // регистр, «ё» и знаки препинания не важны
+  drinkWrong: [
+    "Это, конечно, вкусно, но нет 😄",
+    "Горячо... но не то 🔥",
+    "Подумай, что было на выпускном 🎓",
+    "Ещё варианты? 🙃",
+  ],
+  drinkHint: "Подсказка: это делают под вальс 💃🕺",
   waltzSong: "assets/music/never-enough.mp3",   // Never Enough — положи файл сюда
-  waltzCaption: "Как на выпускном 🤍",
+  waltzCaption: "🤍 🖤",
 
   // ---------- 9. Личное письмо ----------
   letterTitle: "Моей Диане",
