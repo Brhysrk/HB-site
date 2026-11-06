@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -22,12 +22,13 @@
       <div class="lock">🔒</div>
       <h1>Только для одной принцессы</h1>
       <p class="muted">Введи пароль, чтобы открыть открытку</p>
+      <p class="pw-question" id="pw-question"></p>
       <form id="pw-form" autocomplete="off">
-        <input id="pw-input" type="password" placeholder="Пароль" inputmode="text" aria-label="Пароль">
+        <div class="pin" id="pin" role="group" aria-label="Пароль"></div>
         <button class="btn" type="submit">Открыть</button>
       </form>
       <p id="pw-msg" class="msg" aria-live="polite"></p>
-      <p id="pw-hint" class="hint hidden"></p>
+      <ol class="hints" id="pw-hints"></ol>
     </div>
   </section>
 
@@ -49,18 +50,22 @@
     <div class="card frame wide">
       <h1 class="script" id="bd-title"></h1>
       <p class="muted" id="bd-subtitle"></p>
-      <div class="cake" id="cake" title="Нажми на свечи, чтобы задуть">
-        <div class="candles" id="candles"></div>
-        <div class="tier tier-top"></div>
-        <div class="tier tier-mid"></div>
-        <div class="tier tier-bot"></div>
-        <div class="plate"></div>
-      </div>
+      <div class="cake" id="cake" title="Нажми на торт, чтобы задуть свечи"></div>
       <div class="row">
         <button class="btn btn-ghost" id="mic-btn">🎤 Задуть в микрофон</button>
       </div>
       <p id="wish-msg" class="msg" aria-live="polite"></p>
-      <button class="btn next hidden" data-next="s-compliments" id="bd-next">Дальше →</button>
+      <button class="btn next hidden" data-next="s-gifts" id="bd-next">Дальше →</button>
+    </div>
+  </section>
+
+  <!-- 3½. ОКНО «Я ПРИГОТОВИЛ ДЛЯ ТЕБЯ ПОДАРКИ» -->
+  <section class="screen" id="s-gifts">
+    <div class="card frame">
+      <div class="gifts-row" aria-hidden="true"><span>🎁</span><span>🎀</span><span>🎁</span></div>
+      <h2 id="gifts-title"></h2>
+      <p class="muted" id="gifts-text"></p>
+      <button class="btn next" data-next="s-compliments">Открыть подарки →</button>
     </div>
   </section>
 
@@ -72,17 +77,6 @@
       <blockquote id="compliment" class="compliment">Нажми на кнопку 💐</blockquote>
       <button class="btn" id="compliment-btn">Ещё комплимент</button>
       <p class="muted small" id="compliment-count"></p>
-      <button class="btn btn-ghost next" data-next="s-map">Дальше →</button>
-    </div>
-  </section>
-
-  <!-- 5. КАРТА ФОТОК -->
-  <section class="screen" id="s-map">
-    <div class="card frame wide">
-      <h2>Наша карта</h2>
-      <p class="muted">Нажимай на сердечки — там наши места и фото</p>
-      <div class="city-tabs" id="city-tabs"></div>
-      <div id="map" class="map"></div>
       <button class="btn btn-ghost next" data-next="s-playlist">Дальше →</button>
     </div>
   </section>
@@ -93,20 +87,44 @@
       <h2>Мой плейлист для тебя</h2>
       <p class="muted">Песни, которые напоминают мне о тебе</p>
       <ul class="playlist" id="playlist"></ul>
-      <audio id="player" preload="none"></audio>
       <a class="btn btn-yandex" id="yandex-link" target="_blank" rel="noopener">Слушать на Яндекс Музыке</a>
       <br>
-      <button class="btn btn-ghost next" data-next="s-reels">Дальше →</button>
+      <button class="btn btn-ghost next" data-next="s-map">Дальше →</button>
     </div>
   </section>
 
-  <!-- 6½. ЛЕНТА РИЛСОВ -->
-  <section class="screen" id="s-reels">
+  <!-- КАРТА ФОТОК -->
+  <section class="screen" id="s-map">
+    <div class="card frame wide">
+      <h2>Наша карта</h2>
+      <p class="muted">Нажимай на сердечки — в каждом наши фото из этого места</p>
+      <div class="city-tabs" id="city-tabs"></div>
+      <div class="map-wrap">
+        <div id="map" class="map"></div>
+        <!-- альбом места: открывается поверх карты по нажатию на сердечко -->
+        <div class="album hidden" id="album" role="dialog" aria-label="Фото места">
+          <div class="album-head"><b id="album-title"></b><span id="album-sub"></span></div>
+          <button class="album-close" id="album-close" aria-label="Закрыть альбом">✕</button>
+          <div class="album-body">
+            <div class="album-strip" id="album-strip"></div>
+            <button class="album-nav prev" id="album-prev" aria-label="Предыдущее фото">‹</button>
+            <button class="album-nav next" id="album-next" aria-label="Следующее фото">›</button>
+          </div>
+          <p class="album-text" id="album-text"></p>
+          <div class="album-count" id="album-count"></div>
+        </div>
+      </div>
+      <button class="btn btn-ghost next" data-next="s-digital">Дальше →</button>
+    </div>
+  </section>
+
+  <!-- ОКНО ПЕРЕД ВАЛЬСОМ -->
+  <section class="screen" id="s-digital">
     <div class="card frame">
-      <h2 id="reels-title"></h2>
-      <p class="muted small">Листай вверх ↑ · нажми для звука · двойной тап — лайк</p>
-      <div class="reels" id="reels"></div>
-      <button class="btn btn-ghost next" data-next="s-dance">Дальше →</button>
+      <div class="big-emoji" aria-hidden="true">💌</div>
+      <p class="digital-text" id="digital-text"></p>
+      <p class="digital-small" id="digital-small"></p>
+      <button class="btn next" data-next="s-dance">Дальше →</button>
     </div>
   </section>
 
@@ -128,15 +146,41 @@
           <div class="floor"></div>
           <div class="couple" id="couple">
             <svg viewBox="0 0 120 160" class="dancers" aria-label="Танцующая пара">
-              <!-- он -->
-              <circle cx="45" cy="22" r="11" fill="#5b4a5e"/>
-              <path d="M35 36 h20 l4 50 h-28 z" fill="#3f3a4f"/>
-              <path d="M33 86 l-3 60 h9 l6-58 z M57 86 l3 60 h-9 l-6-58 z" fill="#3f3a4f"/>
-              <!-- она -->
+              <!-- он: белая рубашка, чёрные брюки -->
+              <path d="M33 86 l-3 60 h9 l6-58 z M57 86 l3 60 h-9 l-6-58 z" fill="#2b2726"/>
+              <path d="M28.5 146 h11 l0.5 3.5 h-12.5 z M50.5 146 h11 l1 3.5 h-12.5 z" fill="#1c1918"/>
+              <rect x="42" y="30" width="6" height="7" rx="2" fill="#e8b4a0"/>
+              <path d="M34 37 Q45 33 56 37 L59.5 85 H30.5 Z"
+                    fill="#fdfbf7" stroke="#cdb49a" stroke-width="1.3" stroke-linejoin="round"/>
+              <path d="M45 42 V85" stroke="#e6d8c6" stroke-width="1"/>
+              <circle cx="46.6" cy="50" r="0.9" fill="#cdb49a"/><circle cx="46.6" cy="59" r="0.9" fill="#cdb49a"/>
+              <circle cx="46.6" cy="68" r="0.9" fill="#cdb49a"/><circle cx="46.6" cy="77" r="0.9" fill="#cdb49a"/>
+              <path d="M40 35.5 L45 42 L50 35.5" fill="none" stroke="#cdb49a" stroke-width="1.2" stroke-linejoin="round"/>
+              <rect x="30.5" y="84" width="29" height="3.5" fill="#2b2726"/>
+              <circle cx="45" cy="22" r="11" fill="#e8b4a0"/>
+              <!-- причёска «шторки»: пробор посередине, пряди расходятся к вискам -->
+              <path d="M33 27 C31.4 15 35.5 7.6 45 7.6 C54.5 7.6 58.6 15 57 27 Q55.6 23 54.8 19.3 Q54 21.8 52.2 23.6 C51.4 18.6 48.8 15.2 45.6 14.4 L44.4 14.4 C41.2 15.2 38.6 18.6 37.8 23.6 Q36 21.8 35.2 19.3 Q34.4 23 33 27 Z" fill="#3b2a22"/>
+              <path d="M45 8.4 V14 M43.5 10 Q40.4 13 39.2 20.5 M46.5 10 Q49.6 13 50.8 20.5" fill="none" stroke="#5c4334" stroke-width="0.8" stroke-linecap="round"/>
+              <!-- она: белое платье -->
+              <path d="M71 38 L85 38 L87 56 C96 80 107 118 112 146 Q78 154 44 146 C49 118 60 80 69 56 Z"
+                    fill="#fffaf3" stroke="#cdb49a" stroke-width="1.3" stroke-linejoin="round"/>
+              <path d="M72 62 Q63 100 57 148 M78 60 Q77 104 76 151 M84 62 Q93 100 99 148"
+                    fill="none" stroke="#eadccb" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M69 54 h18 l0.4 4 h-18.8 z" fill="#f5d9dc" stroke="#d8b0b5" stroke-width="0.8"/>
+              <!-- её рука на его плече -->
+              <path d="M72.5 41.5 Q64.5 35 56.8 36.4" stroke="#e8b4a0" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+              <ellipse cx="55.6" cy="36.6" rx="2.3" ry="1.9" fill="#e8b4a0"/>
+              <!-- длинные каштановые волосы до середины спины -->
+              <path d="M68 26 C68 12 90 12 89 26 C90 40 97 56 95 76 Q90 82 85 77 C88 60 85 46 80 37 Z" fill="#6b4532"/>
+              <rect x="76" y="33" width="4" height="6" rx="1.5" fill="#e8b4a0"/>
               <circle cx="78" cy="26" r="10" fill="#e8b4a0"/>
-              <path d="M70 18 q8-14 18 0 q2 10 -2 16 q-8-6 -16 0 z" fill="#7a5040"/>
-              <path d="M70 38 h16 l26 110 h-68 z" fill="#f4a7b9"/>
-              <path d="M55 46 q12 -6 18 0" stroke="#3f3a4f" stroke-width="5" fill="none" stroke-linecap="round"/>
+              <path d="M67.5 27 Q68 14 79 14 Q90 14 89 25 Q84 19 76 20.5 Q70 22 67.5 27 Z" fill="#6b4532"/>
+              <path d="M84 17 Q88 20 88.5 25" fill="none" stroke="#8a5d44" stroke-width="1" stroke-linecap="round"/>
+              <!-- его рука в белом рукаве на её талии -->
+              <path d="M55.4 42.5 C58 50 62.5 55.2 72 56.2" stroke="#cdb49a" stroke-width="6.6" fill="none" stroke-linecap="round"/>
+              <path d="M55.4 42.5 C58 50 62.5 55.2 72 56.2" stroke="#fdfbf7" stroke-width="4.6" fill="none" stroke-linecap="round"/>
+              <circle cx="55.3" cy="42.2" r="2.2" fill="#fdfbf7"/>
+              <ellipse cx="73.4" cy="56.2" rx="2.7" ry="2.2" fill="#e8b4a0"/>
             </svg>
           </div>
           <div class="sparkles" id="sparkles"></div>
@@ -169,9 +213,28 @@
     </div>
   </section>
 
+  <!-- Общий аудиоплеер: треки открываются по мере прохождения страниц -->
+  <div class="mplayer hidden" id="mplayer">
+    <div class="mp-progress"><span id="mp-bar"></span></div>
+    <button class="mp-btn" id="mp-prev" aria-label="Предыдущий трек">⏮</button>
+    <button class="mp-btn mp-play" id="mp-play" aria-label="Играть">▶</button>
+    <button class="mp-btn" id="mp-next" aria-label="Следующий трек">⏭</button>
+    <div class="mp-meta"><b id="mp-title"></b><span id="mp-artist"></span></div>
+    <button class="mp-list" id="mp-list" aria-label="Все треки">♫ <span id="mp-count"></span></button>
+    <div class="mp-popup hidden" id="mp-popup"><ul id="mp-tracks"></ul></div>
+    <div class="mp-toast" id="mp-toast" aria-live="polite"></div>
+  </div>
+
   <nav class="dots hidden" id="dots" aria-label="Разделы"></nav>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <div class="lightbox hidden" id="lightbox" role="dialog" aria-modal="true" aria-label="Фото">
+    <button class="lb-close" id="lb-close" aria-label="Закрыть">✕</button>
+    <button class="lb-prev" id="lb-prev" aria-label="Предыдущее">‹</button>
+    <figure><img id="lb-img" alt=""><figcaption id="lb-cap"></figcaption></figure>
+    <button class="lb-next" id="lb-next" aria-label="Следующее">›</button>
+  </div>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
   <script src="js/config.js"></script>
   <script src="js/main.js"></script>
 </body>
