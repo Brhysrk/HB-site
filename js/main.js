@@ -3,8 +3,21 @@
   const $ = (s) => document.querySelector(s);
   const rand = (a) => a[Math.floor(Math.random() * a.length)];
 
+  // Заголовки и подзаголовки страниц из config.js (если ключа нет, остаётся текст из index.html)
+  [
+    ["#pw-title", "passwordTitle"], ["#pw-subtitle", "passwordSubtitle"],
+    ["#compliments-title", "complimentsTitle"], ["#compliments-subtitle", "complimentsSubtitle"], ["#compliment", "complimentsStart"],
+    ["#playlist-title", "playlistTitle"], ["#playlist-subtitle", "playlistSubtitle"],
+    ["#map-title", "mapTitle"], ["#map-subtitle", "mapSubtitle"],
+    ["#envelope-hint", "envelopeHint"],
+    ["#remember-emoji", "rememberEmoji"], ["#remember-text", "rememberText"], ["#remember-small", "rememberSmall"],
+    ["#feedback-emoji", "feedbackEmoji"], ["#feedback-title", "feedbackTitle"], ["#feedback-text", "feedbackText"],
+    ["#feedback-small", "feedbackSmall"], ["#feedback-rating-label", "feedbackRatingLabel"], ["#feedback-send", "feedbackButton"],
+    ["#feedback-thanks", "feedbackThanks"],
+  ].forEach(([sel, key]) => { if (C[key] != null && $(sel)) $(sel).textContent = C[key]; });
+
   // ---------- Навигация между экранами ----------
-  const NAV = ["s-birthday", "s-gifts", "s-compliments", "s-playlist", "s-map", "s-digital", "s-dance", "s-letter"];
+  const NAV = ["s-birthday", "s-gifts", "s-compliments", "s-playlist", "s-remember", "s-map", "s-digital", "s-dance", "s-letter", "s-feedback"];
   const onEnter = {};
   let current = "s-password";
   const visited = new Set(); // точками можно вернуться только туда, где уже была
@@ -66,6 +79,7 @@
     return inp;
   });
   setTimeout(() => cells[0].focus(), 300);
+  onEnter["s-password"] = () => setTimeout(() => cells[0].focus(), 300); // после таймера
 
   function checkPin() {
     if (unlocked) return;
@@ -771,6 +785,80 @@
     playTrack(unlockedTracks.has(id) ? id : WALTZ);
   };
 
+  // ---------- 10. Отзыв ----------
+  // Сердечки-оценка и поле для текста. «Отправить»: если в config.js есть feedbackEndpoint — сохраняет
+  // оценку и текст в Google Таблицу. Если его нет или сохранить не вышло: feedbackLink ({text} в ссылке
+  // заменяется на её отзыв), иначе «Поделиться» на телефоне, а где этого нет — копирует отзыв.
+  let rating = 0;
+  const hearts = [1, 2, 3, 4, 5].map((n) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = "♥\uFE0E";
+    b.setAttribute("role", "radio"); b.setAttribute("aria-label", n + " из 5");
+    b.onclick = () => {
+      rating = n;
+      $("#feedback-msg").textContent = "";
+      hearts.forEach((h, i) => { h.classList.toggle("on", i < n); h.setAttribute("aria-checked", i === n - 1); });
+    };
+    $("#feedback-rating").appendChild(b);
+    return b;
+  });
+  if (C.feedbackRatingLabel === null) { $("#feedback-rating-label").remove(); $("#feedback-rating").remove(); }
+  $("#feedback-input").placeholder = C.feedbackPlaceholder || "";
+  $("#feedback-input").oninput = () => { $("#feedback-msg").textContent = ""; };
+  const feedbackDone = (msg) => {
+    $("#feedback-step").classList.add("hidden");
+    $("#feedback-thanks").classList.remove("hidden");
+    $("#feedback-msg").textContent = msg || "";
+    confetti(90);
+  };
+  // Запрос «no-cors»: ответ Google прочитать нельзя, но если запрос ушёл, строка в таблице появилась
+  const saveFeedback = async (text) => {
+    if (!C.feedbackEndpoint) return false;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 15000);
+    try {
+      await fetch(C.feedbackEndpoint, {
+        method: "POST", mode: "no-cors", signal: ctrl.signal,
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ rating, text, localTime: new Date().toString() }),
+      });
+      return true;
+    } catch (e) { return false; } finally { clearTimeout(t); }
+  };
+  $("#feedback-send").onclick = async () => {
+    const btn = $("#feedback-send");
+    if (btn.disabled) return;
+    const text = $("#feedback-input").value.trim();
+    if (!text && !rating) {
+      $("#feedback-msg").textContent = C.feedbackEmpty || "";
+      $("#feedback-step").classList.remove("shake"); void $("#feedback-step").offsetWidth;
+      $("#feedback-step").classList.add("shake");
+      $("#feedback-input").focus();
+      return;
+    }
+    if (C.feedbackEndpoint) {
+      const label = btn.textContent;
+      btn.disabled = true; btn.textContent = C.feedbackSending || "…";
+      const saved = await saveFeedback(text);
+      btn.disabled = false; btn.textContent = label;
+      if (saved) return feedbackDone();
+    }
+    const body = (rating ? "♥".repeat(rating) + "♡".repeat(5 - rating) + " (" + rating + "/5)\n" : "") + text;
+    const copy = async () => { try { await navigator.clipboard.writeText(body); return true; } catch (e) { return false; } };
+    if (C.feedbackLink) {
+      const withText = C.feedbackLink.includes("{text}");
+      if (!withText) copy();   // без {text} отзыв копируется, чтобы она вставила его в чат
+      window.open(C.feedbackLink.replace("{text}", encodeURIComponent(body)), "_blank", "noopener");
+      return feedbackDone(withText ? null : C.feedbackCopied);
+    }
+    if (navigator.share) {
+      try { await navigator.share({ text: body }); return feedbackDone(); }
+      catch (e) { if (e.name === "AbortError") return; }   // она закрыла окно «Поделиться» — ничего не делаем
+    }
+    if (await copy()) return feedbackDone(C.feedbackCopied);
+    $("#feedback-msg").textContent = C.feedbackCopyFailed || "";
+  };
+
   // ---------- Конфетти ----------
   const cv = $("#confetti"), cx = cv.getContext("2d");
   let parts = [], raf = null;
@@ -799,5 +887,69 @@
   }
 
   // Для разработки: открой сайт с #dev, чтобы пропустить пароль и подарок
-  if (location.hash === "#dev") { NAV.forEach((id) => { visited.add(id); unlockTracks(id, true); }); show("s-birthday"); }
+  function startSite() {
+    if (location.hash === "#dev") { NAV.forEach((id) => { visited.add(id); unlockTracks(id, true); }); show("s-birthday"); }
+    else if (current !== "s-password") show("s-password");
+  }
+
+  // ---------- 0. Таймер до дня рождения ----------
+  // До openAt (время Австрии, не зависит от часов телефона) вместо открытки идёт обратный отсчёт.
+  // 5 нажатий на 🎁 и код timerDebugCode пропускают таймер на этом устройстве; #timer в адресе включает его снова.
+  const OPEN_AT = Date.parse(C.openAt || "") || 0;
+  const SKIP_KEY = "hb-timer-skip";
+  const store = {
+    get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+    set: (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} },
+  };
+  if (location.hash === "#timer") store.set(SKIP_KEY, null);
+  const pad = (n) => String(n).padStart(2, "0");
+  const plural = (n, f) => f[n % 10 === 1 && n % 100 !== 11 ? 0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2];
+  let timerT = null, opening = false;
+  function tick() {
+    const left = OPEN_AT - Date.now();
+    if (left <= 0) { openNow(true); return; }
+    const s = Math.floor(left / 1000);
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    $("#cd-d").textContent = d;      $("#cd-dl").textContent = plural(d, ["день", "дня", "дней"]);
+    $("#cd-h").textContent = pad(h); $("#cd-hl").textContent = plural(h, ["час", "часа", "часов"]);
+    $("#cd-m").textContent = pad(m); $("#cd-ml").textContent = plural(m, ["минута", "минуты", "минут"]);
+    $("#cd-s").textContent = pad(sec); $("#cd-sl").textContent = plural(sec, ["секунда", "секунды", "секунд"]);
+  }
+  function openNow(celebrate) {
+    if (opening) return;
+    opening = true;
+    clearInterval(timerT);
+    if (!celebrate) { startSite(); return; }
+    ["d", "h", "m", "s"].forEach((k) => ($("#cd-" + k).textContent = k === "d" ? "0" : "00"));
+    $("#timer-title").textContent = C.timerDoneText || "🎉";
+    confetti(220);
+    setTimeout(startSite, 2000);
+  }
+  if (OPEN_AT && Date.now() < OPEN_AT && store.get(SKIP_KEY) !== "1") {
+    $("#timer-title").textContent = C.timerTitle || "";
+    $("#timer-text").textContent = C.timerText || "";
+    show("s-timer");
+    tick();
+    timerT = setInterval(tick, 1000);
+  } else {
+    startSite();
+  }
+  // скрытый вход для проверки: 5 быстрых нажатий на подарок, потом код
+  let taps = 0, tapT = null;
+  $("#timer-gift").addEventListener("click", () => {
+    taps++; clearTimeout(tapT); tapT = setTimeout(() => (taps = 0), 2500);
+    if (taps < 5) return;
+    taps = 0;
+    $("#timer-form").classList.remove("hidden");
+    $("#timer-code").focus();
+  });
+  $("#timer-form").addEventListener("submit", (e) => e.preventDefault());
+  $("#timer-code").addEventListener("input", (e) => {
+    const code = String(C.timerDebugCode || ""), v = e.target.value.trim();
+    if (!code || v.length < code.length) return;
+    if (v === code) { store.set(SKIP_KEY, "1"); openNow(false); return; }
+    e.target.value = "";
+    const card = $("#s-timer .card");
+    card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
+  });
 })();

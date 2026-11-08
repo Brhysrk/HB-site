@@ -16,12 +16,30 @@
   <div id="petals" aria-hidden="true"></div>
   <canvas id="confetti" aria-hidden="true"></canvas>
 
+  <!-- 0. ТАЙМЕР ДО ДНЯ РОЖДЕНИЯ: показывается вместо открытки, пока не наступит openAt -->
+  <section class="screen" id="s-timer">
+    <div class="card frame">
+      <div class="big-emoji" id="timer-gift" aria-hidden="true">🎁</div>
+      <h1 id="timer-title"></h1>
+      <div class="countdown" id="countdown">
+        <div><b id="cd-d">0</b><span id="cd-dl">дней</span></div>
+        <div><b id="cd-h">00</b><span id="cd-hl">часов</span></div>
+        <div><b id="cd-m">00</b><span id="cd-ml">минут</span></div>
+        <div><b id="cd-s">00</b><span id="cd-sl">секунд</span></div>
+      </div>
+      <p class="muted" id="timer-text"></p>
+      <form id="timer-form" class="timer-form hidden" autocomplete="off">
+        <input id="timer-code" type="password" inputmode="numeric" maxlength="8" aria-label="Код">
+      </form>
+    </div>
+  </section>
+
   <!-- 1. ПАРОЛЬ -->
   <section class="screen active" id="s-password">
     <div class="card frame">
       <div class="lock">🔒</div>
-      <h1>Только для одной принцессы</h1>
-      <p class="muted">Введи пароль, чтобы открыть открытку</p>
+      <h1 id="pw-title">Только для одной принцессы</h1>
+      <p class="muted" id="pw-subtitle">Введи пароль, чтобы открыть открытку</p>
       <p class="pw-question" id="pw-question"></p>
       <form id="pw-form" autocomplete="off">
         <div class="pin" id="pin" role="group" aria-label="Пароль"></div>
@@ -72,8 +90,8 @@
   <!-- 4. ГЕНЕРАТОР КОМПЛИМЕНТОВ -->
   <section class="screen" id="s-compliments">
     <div class="card frame">
-      <h2>Генератор комплиментов</h2>
-      <p class="muted">Жми сколько хочешь — они не заканчиваются</p>
+      <h2 id="compliments-title">Генератор комплиментов</h2>
+      <p class="muted" id="compliments-subtitle">Жми сколько хочешь — они не заканчиваются</p>
       <blockquote id="compliment" class="compliment">Нажми на кнопку 💐</blockquote>
       <button class="btn" id="compliment-btn">Ещё комплимент</button>
       <p class="muted small" id="compliment-count"></p>
@@ -84,20 +102,30 @@
   <!-- 6. ПЛЕЙЛИСТ -->
   <section class="screen" id="s-playlist">
     <div class="card frame">
-      <h2>Мой плейлист для тебя</h2>
-      <p class="muted">Песни, которые напоминают мне о тебе</p>
+      <h2 id="playlist-title">Мой плейлист для тебя</h2>
+      <p class="muted" id="playlist-subtitle">Песни, которые напоминают мне о тебе</p>
       <ul class="playlist" id="playlist"></ul>
       <a class="btn btn-yandex" id="yandex-link" target="_blank" rel="noopener">Слушать на Яндекс Музыке</a>
       <br>
-      <button class="btn btn-ghost next" data-next="s-map">Дальше →</button>
+      <button class="btn btn-ghost next" data-next="s-remember">Дальше →</button>
+    </div>
+  </section>
+
+  <!-- ОКНО ПОСЛЕ ПЛЕЙЛИСТА: «Я всё помню» -->
+  <section class="screen" id="s-remember">
+    <div class="card frame">
+      <div class="big-emoji" id="remember-emoji" aria-hidden="true">🤍</div>
+      <p class="remember-text script" id="remember-text">Я всё помню</p>
+      <p class="remember-small" id="remember-small"></p>
+      <button class="btn next" data-next="s-map">Дальше →</button>
     </div>
   </section>
 
   <!-- КАРТА ФОТОК -->
   <section class="screen" id="s-map">
     <div class="card frame wide">
-      <h2>Наша карта</h2>
-      <p class="muted">Нажимай на сердечки — в каждом наши фото из этого места</p>
+      <h2 id="map-title">Наша карта</h2>
+      <p class="muted" id="map-subtitle">Нажимай на сердечки — в каждом наши фото из этого места</p>
       <div class="city-tabs" id="city-tabs"></div>
       <div class="map-wrap">
         <div id="map" class="map"></div>
@@ -203,13 +231,32 @@
       <div class="envelope" id="envelope" role="button" tabindex="0" aria-label="Открыть письмо">
         <div class="env-flap"></div>
         <div class="env-body">💌</div>
-        <p class="muted small">Нажми, чтобы открыть</p>
+        <p class="muted small" id="envelope-hint">Нажми, чтобы открыть</p>
       </div>
       <article class="letter hidden" id="letter">
         <h2 class="script" id="letter-title"></h2>
         <div id="letter-body"></div>
         <p class="sign script" id="letter-sign"></p>
+        <button class="btn next" data-next="s-feedback">Дальше →</button>
       </article>
+    </div>
+  </section>
+
+  <!-- 10. ПОСЛЕДНЕЕ ОКНО: ОТЗЫВ -->
+  <section class="screen" id="s-feedback">
+    <div class="card frame">
+      <div class="big-emoji" id="feedback-emoji" aria-hidden="true">🥹</div>
+      <h2 id="feedback-title">Тебе понравилось?</h2>
+      <p class="muted" id="feedback-text"></p>
+      <div id="feedback-step">
+        <p class="feedback-label" id="feedback-rating-label"></p>
+        <div class="rating" id="feedback-rating" role="radiogroup"></div>
+        <textarea class="feedback-input" id="feedback-input" rows="4" aria-label="Отзыв"></textarea>
+        <button class="btn" id="feedback-send">Отправить</button>
+      </div>
+      <p class="feedback-thanks script hidden" id="feedback-thanks"></p>
+      <p class="msg" id="feedback-msg" aria-live="polite"></p>
+      <p class="digital-small" id="feedback-small"></p>
     </div>
   </section>
 
