@@ -582,7 +582,11 @@
     playTrack(list[(i + dir + list.length) % list.length].id);
   }
   music.addEventListener("play", renderPlayer);
-  music.addEventListener("playing", () => { if (cur === WALTZ && dancing) syncDancers(); });
+  // Пауза в плеере внизу останавливает и пару в вальсе, play — пара снова кружится в такт
+  music.addEventListener("playing", () => {
+    if (cur === WALTZ && dancing) { $("#ballroom").classList.remove("paused"); syncDancers(); }
+  });
+  music.addEventListener("pause", () => { if (cur === WALTZ && dancing) $("#ballroom").classList.add("paused"); });
   music.addEventListener("pause", renderPlayer);
   music.addEventListener("timeupdate", () => {
     $("#mp-bar").style.width = music.duration ? (100 * music.currentTime / music.duration) + "%" : "0";
@@ -691,7 +695,6 @@
   function startWaltz() {
     $("#waltz-step").classList.remove("hidden");
     $("#ballroom").classList.remove("paused");
-    $("#waltz-toggle").textContent = "⏸ Пауза";
     dancing = true;
     if (!(cur === WALTZ && isPlaying())) playTrack(WALTZ); // если уже играет с вопроса, просто продолжается
     syncDancers();
@@ -721,9 +724,7 @@
   function pauseWaltzScene() {
     dancing = false;
     $("#ballroom").classList.add("paused");
-    $("#waltz-toggle").textContent = "▶ Продолжить";
   }
-  $("#waltz-toggle").onclick = () => (dancing ? (pauseWaltzScene(), pauseMusic()) : startWaltz());
 
   // Простенький вальс на Web Audio (раз-два-три), играет, только пока нет mp3
   const synthWaltz = (() => {
