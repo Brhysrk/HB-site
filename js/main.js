@@ -906,7 +906,7 @@
   const pad = (n) => String(n).padStart(2, "0");
   const plural = (n, f) => f[n % 10 === 1 && n % 100 !== 11 ? 0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2];
   let timerT = null, opening = false;
-  function tick() {
+  function timerTick() {
     const left = OPEN_AT - Date.now();
     if (left <= 0) { openNow(true); return; }
     const s = Math.floor(left / 1000);
@@ -930,8 +930,8 @@
     $("#timer-title").textContent = C.timerTitle || "";
     $("#timer-text").textContent = C.timerText || "";
     show("s-timer");
-    tick();
-    timerT = setInterval(tick, 1000);
+    timerTick();
+    timerT = setInterval(timerTick, 1000);
   } else {
     startSite();
   }
