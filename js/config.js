@@ -253,7 +253,7 @@ window.CONFIG = {
   // в Google Таблицу»). Вида "https://script.google.com/macros/s/…/exec". Если он есть, оценка и текст
   // сохраняются в таблицу, и окно «Поделиться» уже не открывается. Если сохранить не вышло (нет интернета),
   // работает способ из feedbackLink выше.
-  feedbackEndpoint: "",
+  feedbackEndpoint: "https://script.google.com/macros/s/AKfycbzGiDGpCk8QzSgCTA-DLub_J_JReu3iBiDhz3NbJcBsgn4UolerkUTu8a_MPph040_q/exec",
   feedbackSending: "Отправляю…",
   feedbackCopied: "Отзыв скопирован, вставь его мне в сообщения 💌",
   feedbackCopyFailed: "Не получилось отправить отсюда, напиши мне в сообщениях 💌",
